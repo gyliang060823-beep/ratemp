@@ -1,7 +1,8 @@
 ﻿import { addReview, averageScore, getTeacher } from "../../services/storage.js";
 
-export function renderDetail(root, state, navigate) {
-  const teacher = getTeacher(state.teacherId);
+export async function renderDetail(root, state, navigate) {
+  root.innerHTML = `<div class="empty">正在读取教师详情...</div>`;
+  const teacher = await getTeacher(state.teacherId);
   if (!teacher) {
     root.innerHTML = `<div class="empty">没有找到该教师。<br><br><button class="btn secondary" id="back-main">返回主页</button></div>`;
     root.querySelector("#back-main").addEventListener("click", () => navigate("main"));
@@ -46,10 +47,10 @@ export function renderDetail(root, state, navigate) {
   `;
 
   root.querySelector("#back-main").addEventListener("click", () => navigate("main", { college: teacher.college }));
-  root.querySelector("#review-form").addEventListener("submit", (event) => {
+  root.querySelector("#review-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    addReview(teacher.id, data);
+    await addReview(teacher.id, data);
     renderDetail(root, state, navigate);
   });
 }

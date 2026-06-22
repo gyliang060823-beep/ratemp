@@ -1,8 +1,9 @@
 ﻿import { averageScore, getColleges, getTeachers } from "../../services/storage.js";
 
-export function renderMain(root, state, navigate) {
-  const colleges = getColleges();
-  const teachers = getTeachers();
+export async function renderMain(root, state, navigate) {
+  root.innerHTML = `<div class="empty">正在读取教师数据...</div>`;
+  const colleges = await getColleges();
+  const teachers = await getTeachers();
   const selectedCollege = state.college || colleges[0] || "";
   const keyword = state.keyword || "";
   const visibleTeachers = teachers

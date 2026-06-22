@@ -5,8 +5,6 @@ import { renderDetail } from "./modules/detail/detail.js";
 import { renderLogs } from "./modules/logs/logs.js";
 import { initStore, isAuthed, setAuthed } from "./services/storage.js";
 
-initStore();
-
 const modules = {
   login: document.querySelector("#login-module"),
   main: document.querySelector("#main-module"),
@@ -23,7 +21,7 @@ function show(route) {
   navButtons.forEach((button) => button.classList.toggle("active", button.dataset.route === route));
 }
 
-function navigate(route, nextState = {}) {
+async function navigate(route, nextState = {}) {
   state = { ...state, ...nextState, route };
   if (!isAuthed()) {
     show("login");
@@ -31,10 +29,10 @@ function navigate(route, nextState = {}) {
     updateLoginState();
     return;
   }
-  if (route === "main") renderMain(modules.main, state, navigate);
-  if (route === "upload") renderUpload(modules.upload, navigate);
-  if (route === "detail") renderDetail(modules.detail, state, navigate);
-  if (route === "logs") renderLogs(modules.logs);
+  if (route === "main") await renderMain(modules.main, state, navigate);
+  if (route === "upload") await renderUpload(modules.upload, navigate);
+  if (route === "detail") await renderDetail(modules.detail, state, navigate);
+  if (route === "logs") await renderLogs(modules.logs);
   show(route);
   updateLoginState();
 }
@@ -50,4 +48,5 @@ function updateLoginState() {
 }
 
 navButtons.forEach((button) => button.addEventListener("click", () => navigate(button.dataset.route)));
+await initStore();
 navigate("main");

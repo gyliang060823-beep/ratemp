@@ -1,7 +1,8 @@
 ﻿import { addTeacher, getColleges } from "../../services/storage.js";
 
-export function renderUpload(root, navigate) {
-  const colleges = getColleges();
+export async function renderUpload(root, navigate) {
+  root.innerHTML = `<div class="empty">正在准备上传表单...</div>`;
+  const colleges = await getColleges();
   root.innerHTML = `
     <div class="page-head">
       <div>
@@ -33,10 +34,10 @@ export function renderUpload(root, navigate) {
   `;
 
   root.querySelector("#back-main").addEventListener("click", () => navigate("main"));
-  root.querySelector("#upload-form").addEventListener("submit", (event) => {
+  root.querySelector("#upload-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const teacher = addTeacher(data);
+    const teacher = await addTeacher(data);
     navigate("detail", { teacherId: teacher.id });
   });
 }

@@ -24,7 +24,7 @@ export function renderLogin(root, onSuccess) {
     </div>
   `;
 
-  root.querySelector("#login-form").addEventListener("submit", (event) => {
+  root.querySelector("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const answer = root.querySelector("#verify-answer").value.trim();
     const ok = authConfig.acceptedAnswers.some((item) => item.toLowerCase() === answer.toLowerCase());
@@ -33,7 +33,7 @@ export function renderLogin(root, onSuccess) {
       return;
     }
     setAuthed(true);
-    addLog("学生验证通过并进入系统。");
+    await addLog("学生验证通过并进入系统。");
     onSuccess();
   });
 }
