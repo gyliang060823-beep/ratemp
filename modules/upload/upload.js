@@ -27,7 +27,7 @@ export async function renderUpload(root, navigate) {
         </div>
       </div>
       <div class="actions">
-        <button class="btn red" type="submit">保存并查看详情</button>
+        <button class="btn red" type="submit">提交审核</button>
         <button class="btn secondary" type="button" id="back-main">返回主页</button>
       </div>
     </form>
@@ -37,7 +37,18 @@ export async function renderUpload(root, navigate) {
   root.querySelector("#upload-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const teacher = await addTeacher(data);
-    navigate("detail", { teacherId: teacher.id });
+    await addTeacher(data);
+    root.innerHTML = `
+      <div class="panel login-card">
+        <h1>已提交审核</h1>
+        <p class="hint">新教师信息已进入开发者审核队列。审核通过后会出现在学院目录和教师列表中。</p>
+        <div class="actions" style="margin-top:18px">
+          <button class="btn red" id="back-main">返回主页</button>
+          <button class="btn secondary" id="upload-more">继续上传</button>
+        </div>
+      </div>
+    `;
+    root.querySelector("#back-main").addEventListener("click", () => navigate("main"));
+    root.querySelector("#upload-more").addEventListener("click", () => renderUpload(root, navigate));
   });
 }

@@ -26,6 +26,20 @@ create table if not exists system_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists pending_teachers (
+  id text primary key,
+  name text not null,
+  college text not null,
+  title text not null default 'To be added',
+  email text not null default 'To be added',
+  research text not null default 'To be added',
+  intro text not null default 'No introduction yet',
+  score numeric not null check (score >= 1 and score <= 5),
+  review_text text not null default '未填写评语',
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
 insert into teachers (id, name, college, title, email, research, intro)
 values
   ('t-automation-chen', 'Professor Chen', 'Department of Automation', 'Professor', 'chen@example.tsinghua.edu.cn', 'Intelligent control, machine learning, system modeling', 'Clear course structure with emphasis on fundamentals and practice.'),
@@ -47,19 +61,39 @@ values
 alter table teachers enable row level security;
 alter table reviews enable row level security;
 alter table system_logs enable row level security;
+alter table pending_teachers enable row level security;
 
 drop policy if exists "public read teachers" on teachers;
 drop policy if exists "public insert teachers" on teachers;
+drop policy if exists "developer insert teachers" on teachers;
+drop policy if exists "developer update teachers" on teachers;
+drop policy if exists "developer delete teachers" on teachers;
 drop policy if exists "public read reviews" on reviews;
 drop policy if exists "public insert reviews" on reviews;
+drop policy if exists "developer update reviews" on reviews;
+drop policy if exists "developer delete reviews" on reviews;
 drop policy if exists "public read logs" on system_logs;
 drop policy if exists "public insert logs" on system_logs;
+drop policy if exists "developer read logs" on system_logs;
+drop policy if exists "public insert pending teachers" on pending_teachers;
+drop policy if exists "developer read pending teachers" on pending_teachers;
+drop policy if exists "developer update pending teachers" on pending_teachers;
+drop policy if exists "developer delete pending teachers" on pending_teachers;
 
 create policy "public read teachers" on teachers for select using (true);
-create policy "public insert teachers" on teachers for insert with check (true);
+create policy "developer insert teachers" on teachers for insert to authenticated with check (true);
+create policy "developer update teachers" on teachers for update to authenticated using (true) with check (true);
+create policy "developer delete teachers" on teachers for delete to authenticated using (true);
 
 create policy "public read reviews" on reviews for select using (true);
 create policy "public insert reviews" on reviews for insert with check (true);
+create policy "developer update reviews" on reviews for update to authenticated using (true) with check (true);
+create policy "developer delete reviews" on reviews for delete to authenticated using (true);
 
-create policy "public read logs" on system_logs for select using (true);
+create policy "developer read logs" on system_logs for select to authenticated using (true);
 create policy "public insert logs" on system_logs for insert with check (true);
+
+create policy "public insert pending teachers" on pending_teachers for insert with check (status = 'pending');
+create policy "developer read pending teachers" on pending_teachers for select to authenticated using (true);
+create policy "developer update pending teachers" on pending_teachers for update to authenticated using (true) with check (true);
+create policy "developer delete pending teachers" on pending_teachers for delete to authenticated using (true);

@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabaseConfig } from "../data/supabaseConfig.js"
 const TEACHERS_KEY = "thu-rate-demo-teachers";
 const LOGS_KEY = "thu-rate-demo-logs";
 const AUTH_KEY = "thu-rate-demo-auth";
+const PENDING_KEY = "thu-rate-demo-pending-teachers";
 
 let clientPromise;
 let lastBackend = "local";
@@ -45,9 +46,15 @@ async function withRemote(action, fallback) {
   } catch (error) {
     lastBackend = "local";
     lastRemoteError = error?.message || String(error);
-    console.warn("Supabase unavailable, using localStorage fallback.", error);
+    console.warn("Supabase unavailable, using local fallback.", error);
     return fallback();
   }
+}
+
+async function requireSupabase() {
+  const supabase = await getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured.");
+  return supabase;
 }
 
 export function getBackendLabel() {
@@ -65,6 +72,7 @@ export function getRemoteStatus() {
 export async function initStore() {
   if (!localStorage.getItem(TEACHERS_KEY)) write(TEACHERS_KEY, seedTeachers);
   if (!localStorage.getItem(LOGS_KEY)) write(LOGS_KEY, seedLogs);
+  if (!localStorage.getItem(PENDING_KEY)) write(PENDING_KEY, []);
 
   await withRemote(
     async (supabase) => {
@@ -81,6 +89,8 @@ export function setAuthed(value) { write(AUTH_KEY, Boolean(value)); }
 function getLocalTeachers() { return read(TEACHERS_KEY, []); }
 function saveLocalTeachers(teachers) { write(TEACHERS_KEY, teachers); }
 function getLocalLogs() { return read(LOGS_KEY, []); }
+function getLocalPendingTeachers() { return read(PENDING_KEY, []); }
+function saveLocalPendingTeachers(items) { write(PENDING_KEY, items); }
 
 export async function getTeachers() {
   return withRemote(
@@ -95,7 +105,7 @@ export async function getTeachers() {
       const { data: reviews, error: reviewError } = await supabase
         .from("reviews")
         .select("*")
-        .order("date", { ascending: false });
+        .order("created_at", { ascending: false });
       if (reviewError) throw reviewError;
 
       return teachers.map((teacher) => ({
@@ -108,12 +118,7 @@ export async function getTeachers() {
         intro: teacher.intro,
         reviews: reviews
           .filter((review) => review.teacher_id === teacher.id)
-          .map((review) => ({
-            score: Number(review.score),
-            text: review.text,
-            author: review.author || "Anonymous student",
-            date: review.date
-          }))
+          .map(normalizeReview)
       }));
     },
     getLocalTeachers
@@ -137,46 +142,36 @@ export function averageScore(teacher) {
 }
 
 export async function addTeacher(payload) {
-  const teacher = {
-    id: `t-${Date.now()}`,
+  const pendingTeacher = {
+    id: `pending-${Date.now()}`,
     name: payload.name,
     college: payload.college,
     title: payload.title || "To be added",
     email: payload.email || "To be added",
     research: payload.research || "To be added",
-    intro: payload.intro || "No introduction yet"
-  };
-  const review = {
+    intro: payload.intro || "No introduction yet",
     score: Number(payload.score),
-    text: normalizeReviewText(payload.review),
-    author: "Anonymous student",
-    date: today()
+    review_text: normalizeReviewText(payload.review),
+    status: "pending"
   };
 
   return withRemote(
     async (supabase) => {
-      const { error: teacherError } = await supabase.from("teachers").insert(teacher);
-      if (teacherError) throw teacherError;
-
-      const { error: reviewError } = await supabase.from("reviews").insert({
-        teacher_id: teacher.id,
-        score: review.score,
-        text: review.text,
-        author: review.author,
-        date: review.date
-      });
-      if (reviewError) throw reviewError;
-
-      await addLog(`Added teacher: ${teacher.college} - ${teacher.name}, initial score ${payload.score}`);
-      return { ...teacher, reviews: [review] };
+      const { data, error } = await supabase
+        .from("pending_teachers")
+        .insert(pendingTeacher)
+        .select()
+        .single();
+      if (error) throw error;
+      await addLog(`Teacher upload submitted for review: ${pendingTeacher.college} - ${pendingTeacher.name}`);
+      return { ...data, pending: true };
     },
     () => {
-      const teachers = getLocalTeachers();
-      const savedTeacher = { ...teacher, reviews: [review] };
-      teachers.push(savedTeacher);
-      saveLocalTeachers(teachers);
-      addLocalLog(`Added teacher: ${teacher.college} - ${teacher.name}, initial score ${payload.score}`);
-      return savedTeacher;
+      const items = getLocalPendingTeachers();
+      items.unshift({ ...pendingTeacher, created_at: new Date().toISOString() });
+      saveLocalPendingTeachers(items);
+      addLocalLog(`Teacher upload submitted for review: ${pendingTeacher.college} - ${pendingTeacher.name}`);
+      return { ...pendingTeacher, pending: true };
     }
   );
 }
@@ -202,6 +197,7 @@ export async function addReview(teacherId, review) {
       const teacher = teachers.find((item) => item.id === teacherId);
       if (!teacher) return null;
       teacher.reviews.push({
+        id: `local-review-${Date.now()}`,
         score: Number(review.score),
         text: normalizeReviewText(review.text),
         author: "Anonymous student",
@@ -221,7 +217,7 @@ export async function getLogs() {
         .from("system_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(80);
+        .limit(200);
       if (error) throw error;
       return data.map((log) => ({ time: log.time, message: log.message }));
     },
@@ -242,10 +238,184 @@ export async function addLog(message) {
   );
 }
 
+export async function devSignIn(email, password) {
+  const supabase = await requireSupabase();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  await addLog(`Developer signed in: ${email}`);
+  return data.session;
+}
+
+export async function devSignOut() {
+  const supabase = await requireSupabase();
+  await supabase.auth.signOut();
+}
+
+export async function getDevSession() {
+  const supabase = await getSupabase();
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+export async function getPendingTeachers() {
+  return withRemote(
+    async (supabase) => {
+      const { data, error } = await supabase
+        .from("pending_teachers")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    getLocalPendingTeachers
+  );
+}
+
+export async function approvePendingTeacher(pendingId) {
+  const supabase = await requireSupabase();
+  const { data: pending, error: pendingError } = await supabase
+    .from("pending_teachers")
+    .select("*")
+    .eq("id", pendingId)
+    .single();
+  if (pendingError) throw pendingError;
+
+  const teacher = {
+    id: `t-${Date.now()}`,
+    name: pending.name,
+    college: pending.college,
+    title: pending.title,
+    email: pending.email,
+    research: pending.research,
+    intro: pending.intro
+  };
+  const { error: teacherError } = await supabase.from("teachers").insert(teacher);
+  if (teacherError) throw teacherError;
+
+  const { error: reviewError } = await supabase.from("reviews").insert({
+    teacher_id: teacher.id,
+    score: Number(pending.score),
+    text: normalizeReviewText(pending.review_text),
+    author: "Anonymous student",
+    date: today()
+  });
+  if (reviewError) throw reviewError;
+
+  const { error: deleteError } = await supabase.from("pending_teachers").delete().eq("id", pendingId);
+  if (deleteError) throw deleteError;
+
+  await addLog(`Approved teacher upload: ${teacher.college} - ${teacher.name}`);
+  return teacher;
+}
+
+export async function rejectPendingTeacher(pendingId) {
+  const supabase = await requireSupabase();
+  const { error } = await supabase.from("pending_teachers").delete().eq("id", pendingId);
+  if (error) throw error;
+  await addLog(`Rejected teacher upload: ${pendingId}`);
+}
+
+export async function createTeacher(payload) {
+  const supabase = await requireSupabase();
+  const teacher = {
+    id: `t-${Date.now()}`,
+    name: payload.name,
+    college: payload.college,
+    title: payload.title || "To be added",
+    email: payload.email || "To be added",
+    research: payload.research || "To be added",
+    intro: payload.intro || "No introduction yet"
+  };
+  const { data, error } = await supabase.from("teachers").insert(teacher).select().single();
+  if (error) throw error;
+  await addLog(`Developer created teacher: ${teacher.college} - ${teacher.name}`);
+  return data;
+}
+
+export async function updateTeacher(teacherId, payload) {
+  const supabase = await requireSupabase();
+  const { error } = await supabase
+    .from("teachers")
+    .update({
+      name: payload.name,
+      college: payload.college,
+      title: payload.title,
+      email: payload.email,
+      research: payload.research,
+      intro: payload.intro
+    })
+    .eq("id", teacherId);
+  if (error) throw error;
+  await addLog(`Developer updated teacher: ${payload.name}`);
+}
+
+export async function deleteTeacher(teacherId) {
+  const supabase = await requireSupabase();
+  const { error } = await supabase.from("teachers").delete().eq("id", teacherId);
+  if (error) throw error;
+  await addLog(`Developer deleted teacher: ${teacherId}`);
+}
+
+export async function getAllReviews() {
+  return withRemote(
+    async (supabase) => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*, teachers(name, college)")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data.map((review) => ({
+        ...normalizeReview(review),
+        teacher_id: review.teacher_id,
+        teacher_name: review.teachers?.name || review.teacher_id,
+        teacher_college: review.teachers?.college || ""
+      }));
+    },
+    () => getLocalTeachers().flatMap((teacher) => teacher.reviews.map((review) => ({
+      ...review,
+      teacher_id: teacher.id,
+      teacher_name: teacher.name,
+      teacher_college: teacher.college
+    })))
+  );
+}
+
+export async function updateReview(reviewId, payload) {
+  const supabase = await requireSupabase();
+  const { error } = await supabase
+    .from("reviews")
+    .update({
+      score: Number(payload.score),
+      text: normalizeReviewText(payload.text)
+    })
+    .eq("id", reviewId);
+  if (error) throw error;
+  await addLog(`Developer updated review: ${reviewId}`);
+}
+
+export async function deleteReview(reviewId) {
+  const supabase = await requireSupabase();
+  const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+  if (error) throw error;
+  await addLog(`Developer deleted review: ${reviewId}`);
+}
+
+function normalizeReview(review) {
+  return {
+    id: review.id,
+    score: Number(review.score),
+    text: review.text,
+    author: review.author || "Anonymous student",
+    date: review.date
+  };
+}
+
 function addLocalLog(message) {
   const logs = getLocalLogs();
   logs.unshift({ time: new Date().toLocaleString("zh-CN", { hour12: false }), message });
-  write(LOGS_KEY, logs.slice(0, 80));
+  write(LOGS_KEY, logs.slice(0, 200));
 }
 
 function today() {
