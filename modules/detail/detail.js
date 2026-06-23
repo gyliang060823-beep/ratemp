@@ -1,4 +1,5 @@
 import { addReview, averageScore, getTeacher } from "../../services/storage.js";
+import { joinVisible, optionalStat } from "../shared/display.js";
 import { ratingStars } from "../shared/rating.js";
 
 export async function renderDetail(root, state, navigate) {
@@ -10,11 +11,13 @@ export async function renderDetail(root, state, navigate) {
     return;
   }
 
+  const subtitle = joinVisible([teacher.college, teacher.title]);
+
   root.innerHTML = `
     <div class="page-head">
       <div>
         <h1>${teacher.name}</h1>
-        <p>${teacher.college} · ${teacher.title}</p>
+        ${subtitle ? `<p>${subtitle}</p>` : ""}
       </div>
       <button class="btn secondary" id="back-main">返回主页</button>
     </div>
@@ -23,9 +26,9 @@ export async function renderDetail(root, state, navigate) {
         <h2>教师信息</h2>
         <div class="stat-line"><strong>综合评分</strong><span>${ratingStars(averageScore(teacher))}</span></div>
         <div class="stat-line"><strong>评价数量</strong><span>${teacher.reviews.length}</span></div>
-        <div class="stat-line"><strong>联系方式</strong><span>${teacher.email}</span></div>
-        <div class="stat-line"><strong>研究方向</strong><span>${teacher.research}</span></div>
-        <div class="stat-line"><strong>基本介绍</strong><span>${teacher.intro}</span></div>
+        ${optionalStat("联系方式", teacher.email)}
+        ${optionalStat("研究方向", teacher.research)}
+        ${optionalStat("基本介绍", teacher.intro)}
       </div>
       <form class="panel" id="review-form">
         <h2>追加评价</h2>

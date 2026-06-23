@@ -1,4 +1,5 @@
 import { averageScore, getColleges, getTeachers } from "../../services/storage.js";
+import { joinVisible } from "../shared/display.js";
 import { ratingStars } from "../shared/rating.js";
 
 export async function renderMain(root, state, navigate) {
@@ -96,16 +97,19 @@ function renderContent({ selectedCollege, showDepartments, departments, visibleT
 
   return `
     <div class="grid teacher-grid">
-      ${visibleTeachers.map((teacher) => `
-        <button class="card teacher-card" data-id="${teacher.id}">
-          <h3>${teacher.name}</h3>
-          <p>${teacher.title} · ${teacher.research}</p>
-          <div class="badge-row">
-            <span class="badge score">${ratingStars(averageScore(teacher))}</span>
-            <span class="badge count">${teacher.reviews.length} 条评价</span>
-          </div>
-        </button>
-      `).join("") || `<div class="empty">当前条件下没有教师。</div>`}
+      ${visibleTeachers.map((teacher) => {
+        const meta = joinVisible([teacher.title, teacher.research]);
+        return `
+          <button class="card teacher-card" data-id="${teacher.id}">
+            <h3>${teacher.name}</h3>
+            ${meta ? `<p>${meta}</p>` : ""}
+            <div class="badge-row">
+              <span class="badge score">${ratingStars(averageScore(teacher))}</span>
+              <span class="badge count">${teacher.reviews.length} 条评价</span>
+            </div>
+          </button>
+        `;
+      }).join("") || `<div class="empty">当前条件下没有教师。</div>`}
     </div>
   `;
 }

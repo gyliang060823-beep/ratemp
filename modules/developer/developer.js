@@ -14,6 +14,7 @@ import {
   updateReview,
   updateTeacher
 } from "../../services/storage.js";
+import { joinVisible } from "../shared/display.js";
 import { ratingStars } from "../shared/rating.js";
 
 export async function renderDeveloper(root, navigate) {
@@ -106,8 +107,8 @@ function renderPending(items) {
         <article class="dev-item">
           <div>
             <h3>${item.name}</h3>
-            <p class="meta">${item.college} · ${item.research} · ${item.title}</p>
-            <p>${item.intro}</p>
+            <p class="meta">${joinVisible([item.college, item.research, item.title])}</p>
+            ${joinVisible([item.intro]) ? `<p>${item.intro}</p>` : ""}
             <p>${ratingStars(item.score)} <span class="meta">${item.review_text || "未填写评语"}</span></p>
           </div>
           <div class="actions">
