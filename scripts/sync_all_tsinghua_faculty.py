@@ -344,8 +344,9 @@ def get_dev_access_token():
 
 
 def sync_supabase(teachers):
-    existing = supabase_request("teachers?select=id")
+    existing = supabase_request("teachers?select=id,name,college")
     existing_ids = {row["id"] for row in existing}
+    existing_people = {(row.get("name"), row.get("college")) for row in existing}
     to_insert = [
         {
             "id": item["id"],
@@ -357,7 +358,7 @@ def sync_supabase(teachers):
             "intro": item["intro"],
         }
         for item in teachers
-        if item["id"] not in existing_ids
+        if item["id"] not in existing_ids and (item["name"], item["college"]) not in existing_people
     ]
     inserted = 0
     errors = []
