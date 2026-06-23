@@ -1,4 +1,5 @@
-﻿import { addReview, averageScore, getTeacher } from "../../services/storage.js";
+import { addReview, averageScore, getTeacher } from "../../services/storage.js";
+import { ratingStars } from "../shared/rating.js";
 
 export async function renderDetail(root, state, navigate) {
   root.innerHTML = `<div class="empty">正在读取教师详情...</div>`;
@@ -20,7 +21,7 @@ export async function renderDetail(root, state, navigate) {
     <div class="split">
       <div class="panel">
         <h2>教师信息</h2>
-        <div class="stat-line"><strong>综合评分</strong><span>${averageScore(teacher) || "暂无"} / 5</span></div>
+        <div class="stat-line"><strong>综合评分</strong><span>${ratingStars(averageScore(teacher))}</span></div>
         <div class="stat-line"><strong>评价数量</strong><span>${teacher.reviews.length}</span></div>
         <div class="stat-line"><strong>联系方式</strong><span>${teacher.email}</span></div>
         <div class="stat-line"><strong>研究方向</strong><span>${teacher.research}</span></div>
@@ -38,7 +39,10 @@ export async function renderDetail(root, state, navigate) {
       <div class="review-list">
         ${teacher.reviews.map((review) => `
           <article class="review">
-            <div><strong>${review.score} / 5</strong> <span class="meta">${review.author} · ${review.date}</span></div>
+            <div class="review-head">
+              ${ratingStars(review.score)}
+              <span class="meta">${review.author} · ${review.date}</span>
+            </div>
             <p>${review.text}</p>
           </article>
         `).join("")}

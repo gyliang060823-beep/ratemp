@@ -125,12 +125,35 @@ button { cursor: pointer; }
 }
 .badge.score { background: #fff4e5; color: var(--amber); }
 .badge.count { background: #eafaf2; color: var(--green); }
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  letter-spacing: 0;
+}
+.star {
+  color: #cfd6e1;
+  font-size: 17px;
+  line-height: 1;
+}
+.star.filled { color: #f5a524; }
+.rating-label {
+  color: #775012;
+  font-size: 13px;
+  font-weight: 700;
+}
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .search { max-width: 360px; }
 .split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; align-items: start; }
 .review-list { display: grid; gap: 12px; }
 .review { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
 .review strong { color: var(--teal); }
+.review-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .meta { color: var(--muted); font-size: 14px; }
 .stat-line { display: grid; grid-template-columns: 160px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .log-list { display: grid; gap: 10px; }

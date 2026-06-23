@@ -1,4 +1,5 @@
-﻿import { averageScore, getColleges, getTeachers } from "../../services/storage.js";
+import { averageScore, getColleges, getTeachers } from "../../services/storage.js";
+import { ratingStars } from "../shared/rating.js";
 
 export async function renderMain(root, state, navigate) {
   root.innerHTML = `<div class="empty">正在读取教师数据...</div>`;
@@ -40,7 +41,7 @@ export async function renderMain(root, state, navigate) {
             <h3>${teacher.name}</h3>
             <p>${teacher.title} · ${teacher.research}</p>
             <div class="badge-row">
-              <span class="badge score">评分 ${averageScore(teacher) || "暂无"}</span>
+              <span class="badge score">${ratingStars(averageScore(teacher))}</span>
               <span class="badge count">${teacher.reviews.length} 条评价</span>
             </div>
           </button>
