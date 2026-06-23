@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+import sys
 import time
 from datetime import datetime
 from html.parser import HTMLParser
@@ -386,6 +387,18 @@ def sync_supabase(teachers):
 
 
 def main():
+    if "--sync-only" in sys.argv:
+        teachers = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
+        inserted, existing_count, errors = sync_supabase(teachers)
+        print(f"Loaded local data from {OUTPUT_PATH}")
+        print(f"Supabase existing teachers before sync: {existing_count}")
+        print(f"Inserted new teachers: {inserted}")
+        if errors:
+            print("Supabase sync errors:")
+            for error in errors:
+                print(error)
+        return
+
     units = discover_units()
     print(f"Discovered {len(units)} official unit sites from Tsinghua yxsz page.")
 
