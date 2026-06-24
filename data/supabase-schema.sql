@@ -1,4 +1,4 @@
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists teachers (
   id text primary key,
@@ -50,7 +50,7 @@ create table if not exists developer_keys (
 
 -- Run this once after replacing change-this-developer-key with your private developer login key.
 insert into developer_keys (id, key_hash)
-values ('primary', crypt('change-this-developer-key', gen_salt('bf')))
+values ('primary', extensions.crypt('change-this-developer-key', extensions.gen_salt('bf')))
 on conflict (id) do update set key_hash = excluded.key_hash;
 
 create or replace function public.is_developer_key()
@@ -63,7 +63,7 @@ as $$
   select exists (
     select 1
     from developer_keys
-    where key_hash = crypt(
+    where key_hash = extensions.crypt(
       coalesce((current_setting('request.headers', true)::json ->> 'x-developer-key'), ''),
       key_hash
     )
