@@ -23,7 +23,7 @@ function show(route) {
 
 async function navigate(route, nextState = {}) {
   state = { ...state, ...nextState, route };
-  if (!isAuthed()) {
+  if (!isAuthed() && route !== "developer") {
     show("login");
     renderLogin(modules.login, () => navigate("main"));
     updateLoginState();

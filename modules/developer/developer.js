@@ -33,7 +33,7 @@ function renderDeveloperLogin(root, navigate) {
       <div class="page-head">
         <div>
           <h1>开发者登录</h1>
-          <p>使用 Supabase Auth 开发者账号进入审核与维护后台。</p>
+          <p>使用 Supabase Auth 开发者账号进入审核与数据维护后台。</p>
         </div>
       </div>
       <form id="dev-login-form">
@@ -73,7 +73,7 @@ async function renderDeveloperDashboard(root, navigate, email) {
     <div class="page-head">
       <div>
         <h1>开发者后台</h1>
-        <p>${email} · 审核上传、维护教师信息、管理评论和查看系统日志。</p>
+        <p>${escapeText(email)} · 审核上传、维护教师信息、管理评论和查看系统日志。</p>
       </div>
       <button class="btn secondary" id="dev-signout">退出后台</button>
     </div>
@@ -106,14 +106,14 @@ function renderPending(items) {
       ${items.map((item) => `
         <article class="dev-item">
           <div>
-            <h3>${item.name}</h3>
-            <p class="meta">${joinVisible([item.college, item.research, item.title])}</p>
-            ${joinVisible([item.intro]) ? `<p>${item.intro}</p>` : ""}
-            <p>${ratingStars(item.score)} <span class="meta">${item.review_text || "未填写评语"}</span></p>
+            <h3>${escapeText(item.name)}</h3>
+            <p class="meta">${escapeText(joinVisible([item.college, item.research, item.title]))}</p>
+            ${joinVisible([item.intro]) ? `<p>${escapeText(item.intro)}</p>` : ""}
+            <p>${ratingStars(item.score)} <span class="meta">${escapeText(item.review_text || "未填写评语")}</span></p>
           </div>
           <div class="actions">
-            <button class="btn red approve-pending" data-id="${item.id}">通过</button>
-            <button class="btn secondary reject-pending" data-id="${item.id}">拒绝</button>
+            <button class="btn red approve-pending" data-id="${escapeAttr(item.id)}">通过</button>
+            <button class="btn secondary reject-pending" data-id="${escapeAttr(item.id)}">拒绝</button>
           </div>
         </article>
       `).join("")}
@@ -128,7 +128,7 @@ function renderTeachers(teachers) {
       <div class="form-grid">
         <input name="name" required placeholder="姓名" />
         <input name="college" required placeholder="学院" />
-        <input name="research" required placeholder="系/方向" />
+        <input name="research" placeholder="系或方向" />
         <input name="title" placeholder="职称" />
         <input name="email" placeholder="邮箱或主页" />
         <input name="intro" placeholder="简介" />
@@ -137,19 +137,19 @@ function renderTeachers(teachers) {
     </form>
     <div class="dev-table-wrap">
       <table class="dev-table">
-        <thead><tr><th>姓名</th><th>学院</th><th>系/方向</th><th>职称</th><th>邮箱/主页</th><th>简介</th><th>操作</th></tr></thead>
+        <thead><tr><th>姓名</th><th>学院</th><th>系或方向</th><th>职称</th><th>邮箱/主页</th><th>简介</th><th>操作</th></tr></thead>
         <tbody>
           ${teachers.map((teacher) => `
             <tr>
-              <td><input data-field="name" data-id="${teacher.id}" value="${escapeAttr(teacher.name)}" /></td>
-              <td><input data-field="college" data-id="${teacher.id}" value="${escapeAttr(teacher.college)}" /></td>
-              <td><input data-field="research" data-id="${teacher.id}" value="${escapeAttr(teacher.research)}" /></td>
-              <td><input data-field="title" data-id="${teacher.id}" value="${escapeAttr(teacher.title)}" /></td>
-              <td><input data-field="email" data-id="${teacher.id}" value="${escapeAttr(teacher.email)}" /></td>
-              <td><textarea data-field="intro" data-id="${teacher.id}">${escapeText(teacher.intro)}</textarea></td>
+              <td><input data-field="name" data-id="${escapeAttr(teacher.id)}" value="${escapeAttr(teacher.name)}" /></td>
+              <td><input data-field="college" data-id="${escapeAttr(teacher.id)}" value="${escapeAttr(teacher.college)}" /></td>
+              <td><input data-field="research" data-id="${escapeAttr(teacher.id)}" value="${escapeAttr(teacher.research)}" /></td>
+              <td><input data-field="title" data-id="${escapeAttr(teacher.id)}" value="${escapeAttr(teacher.title)}" /></td>
+              <td><input data-field="email" data-id="${escapeAttr(teacher.id)}" value="${escapeAttr(teacher.email)}" /></td>
+              <td><textarea data-field="intro" data-id="${escapeAttr(teacher.id)}">${escapeText(teacher.intro)}</textarea></td>
               <td class="table-actions">
-                <button class="btn secondary save-teacher" data-id="${teacher.id}">保存</button>
-                <button class="btn red delete-teacher" data-id="${teacher.id}">删除</button>
+                <button class="btn secondary save-teacher" data-id="${escapeAttr(teacher.id)}">保存</button>
+                <button class="btn red delete-teacher" data-id="${escapeAttr(teacher.id)}">删除</button>
               </td>
             </tr>
           `).join("")}
@@ -168,13 +168,13 @@ function renderReviews(reviews) {
         <tbody>
           ${reviews.map((review) => `
             <tr>
-              <td>${review.teacher_name}<br><span class="meta">${review.teacher_college}</span></td>
-              <td><input data-review-field="score" data-id="${review.id}" type="number" min="1" max="5" step="0.1" value="${review.score}" /></td>
-              <td><textarea data-review-field="text" data-id="${review.id}">${escapeText(review.text)}</textarea></td>
-              <td>${review.date}</td>
+              <td>${escapeText(review.teacher_name)}<br><span class="meta">${escapeText(review.teacher_college)}</span></td>
+              <td><input data-review-field="score" data-id="${escapeAttr(review.id)}" type="number" min="1" max="5" step="0.1" value="${escapeAttr(review.score)}" /></td>
+              <td><textarea data-review-field="text" data-id="${escapeAttr(review.id)}">${escapeText(review.text)}</textarea></td>
+              <td>${escapeText(review.date)}</td>
               <td class="table-actions">
-                <button class="btn secondary save-review" data-id="${review.id}">保存</button>
-                <button class="btn red delete-review" data-id="${review.id}">删除</button>
+                <button class="btn secondary save-review" data-id="${escapeAttr(review.id)}">保存</button>
+                <button class="btn red delete-review" data-id="${escapeAttr(review.id)}">删除</button>
               </td>
             </tr>
           `).join("")}
@@ -187,7 +187,7 @@ function renderReviews(reviews) {
 function renderLogs(logs) {
   return `
     <div class="log-list">
-      ${logs.map((log) => `<div class="log-item"><strong>${log.time}</strong><br>${log.message}</div>`).join("") || `<div class="empty">暂无日志。</div>`}
+      ${logs.map((log) => `<div class="log-item"><strong>${escapeText(log.time)}</strong><br>${escapeText(log.message)}</div>`).join("") || `<div class="empty">暂无日志。</div>`}
     </div>
   `;
 }
@@ -245,24 +245,35 @@ function bindReviewActions(root, navigate) {
 
 function collectTeacherRow(root, id) {
   const fields = {};
-  root.querySelectorAll(`[data-id="${id}"][data-field]`).forEach((input) => {
-    fields[input.dataset.field] = input.value;
+  root.querySelectorAll(`[data-id="${cssEscape(id)}"][data-field]`).forEach((input) => {
+    fields[input.dataset.field] = input.value.trim();
   });
   return fields;
 }
 
 function collectReviewRow(root, id) {
   const fields = {};
-  root.querySelectorAll(`[data-id="${id}"][data-review-field]`).forEach((input) => {
+  root.querySelectorAll(`[data-id="${cssEscape(id)}"][data-review-field]`).forEach((input) => {
     fields[input.dataset.reviewField] = input.value;
   });
   return fields;
 }
 
+function cssEscape(value) {
+  if (window.CSS?.escape) return CSS.escape(value);
+  return String(value).replaceAll('"', '\\"');
+}
+
 function escapeAttr(value) {
-  return String(value || "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;");
 }
 
 function escapeText(value) {
-  return String(value || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
